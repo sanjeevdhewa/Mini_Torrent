@@ -1,59 +1,72 @@
-# MiniTorrent
-A torrent-like resilient file sharing system which supports synchronization and parallel downloading.
-This is a peer to peer network  which have a centralised server containing metadata of all peers.
-System also contains a backup server to avoid single point of failure on centralised server.
-Implemented own RPC mechanism, message encoding and methods for message serialization and deserialization.
+
+## Wikipedia-Search-Engine
+A wikipedia content search engine on ~72 GB of wikipedia dump. In order to fecilitate faster search results indexing technique is used and top k results are fetched using ranking algorithem.
+### Parsing:
+Parsing is done using SAX parser, which efficiently reads the xml corpus line by line so that we don't run out of memory while parsing.
+Parsing a page includes following operations:
+```
+   - Case Folding
+   - Tokenization
+   - Stop words removal
+   - Stemming
+   ```
+### Inverted Index:
+Inverted index of a token contains posting list having information of documents in which word is occouring. Along with doc information it also stores fields info as well.
+Following fields have been used in posting list:
+```
+t:title
+c:category
+i:infobox
+r:reference
+e:external link
+b:body
+tfidf
+```
+tfidf is made of two factors:
+- tf: How frequent a word is in a particular document or field
+- idf: How relevent that word is considering all documents 
+
+typical line of inverted index looks like-
+```
+token#doc_id123t12c12i5r34
+```
+#### Challenges:
+- Since we can not store and process all pages of wikidump(~72gb) in main memory.Pages are processed in batch(30000 pages) and several intermediatory index files will  be generated.
+- Sorting these index files requires external sorting 
+- After sorting and merging we do have multiple final inverted index files, which needs to be accessed using secondary index.
+
+### Technologies:
+Language:Python3
+
+Modules:
+```
+NLTK
+Pystemmer
+```
+### Directory structure:
+
+- base directory=/
+- title directory=/title
+- inverted index directory=/inverted_index/merged_path
+- query's text file=/
+- wiki dump directory(in zip formate)=/wiki_dump
 
 
-## Architecture
-  ![alt text](Design.png)
-  
-## Parallel Chunk Downloading algorithm:
-1. Created a map where key is chunk number and value is corresponding list of peers having that chunk.
-2. For each chunk select a random peer from peer list of that chunk.
-3. Then request chunk from the selected peer.
+### How to run
+#### 1.Index creation:
+1. run phase2.ipynb file to create index
+2. run fetchtitle.ipynb to create title and title_id map files
+#### 2.Search:
+1. Put queries in quires.txt
+2. Run search_refined.py to fetch search result
 
-## Message Format
-  ![alt text](Message.png)
-  
-1. Message start: Indicates the start of a new message
-2. Msg Type size: Size(in bytes) of the message type, i.e. number of bytes to read to get the message type
-3. Msg type: Actual message type(ex: upload,download  etc)
-4. Payload size: Size(in bytes) of the entire payload, i.e. number of bytes to read to get entire payload
-5. Payload: Payload in bytes.
+### Search output:
+1. Search output will be dumped into queries_op.txt file
+2. Run search_refined.py to fetch search result
 
-
-## RPC messages
-
-### Messages on Peer Side
-1. make_file:-response from tracker with ip and port address of peers having chunks of file.
-2. send_piece_info:-request to peer i.e. total number of chunks of a file this peer have.
-3. send_pieces:-request to peer for downloading particular chunk of file.
-4. peer_authentication:-request of joining the group to the group admin.
-
-### Messages on Tracker Side
-1. create_user:- Request to create user.
-2. login:- Request to login user.
-3. create_group:- Request to create a group.
-4. join_group:- Request to join a group whose name is given.
-5. leave_group:- Request to leave a particular group.
-6. list_groups:- Request to list all the groups.
-7. list_file:- Request to list all files of a respective group.
-8. logout:- Request by a registered user to logout out.
-9. upload_file:- Request to upload a file on a particular group.
-10. download_file:- Request to download a file from a particular group.
-11. sync:- Request to synchronize the database with other tracker.
+### Search output:
+Search output will be dumped into queries_op.txt file
 
 
 
 
-## Commands
--   create_user  < userid >   < password > q
--   login < userid > < password > q
--   create_group < group_id > q
--   join_group < groupid > q
--   list_groups q
--   list_file < groupid > q
--   logout q
--   upload_file < groupid > < filename > < filesize > q
--   download_file < groupid > < filename > q
